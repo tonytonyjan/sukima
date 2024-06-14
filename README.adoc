@@ -1,0 +1,128 @@
+= Sukima image:https://github.com/tonytonyjan/sukima/actions/workflows/test.yml/badge.svg[]
+
+Sukima is a lightweight data schema validation library for Ruby written in only ~100 lines of code.
+It provides a simple and flexible way to define constraints for data schema and validate it.
+
+== Usage
+
+Constraints are defined by keyword arguments such as `:type`, `:nonnil`, `:format`.
+
+[source,ruby]
+----
+sukima = Sukima.new **constraints
+result = sukima.validate(data)
+result.to_h # => Nested hash of validation results
+result.message # => Array of error messages
+----
+
+To see built-in constraints, check `lib/sukima/constraints.rb`.
+
+== Quick Start
+
+[source,ruby]
+----
+require 'sukima'
+
+sukima = Sukima.new type: Hash do
+  field :id, required: true
+  field :name, type: String, format: /\A[a-z]+\z/
+  field :age, type: Integer, in: 20..100
+  field :nicknames, type: Array, length: 3 do
+    items type: String, nonnil: true
+  end
+end
+
+result = sukima.validate( {name: 'JOHN', age: 18, nicknames: [1, nil] })
+
+result.valid? # => false
+result[:nicknames][1].messages # => ["should not be nil"]
+result.messages
+# =>
+# ["id is required",
+#  "name should match \\A[a-z]+\\z",
+#  "age should be in 20..100",
+#  "nicknames should have length of 3",
+#  "nicknames.0 should be String",
+#  "nicknames.1 should not be nil"]
+----
+
+== Custom Constraints
+
+Any singleton method of `Sukima::Constraints` becomes a constraint.
+A constraint method accepts two arguments, the first is the constraint configuration passed by the user and the second is the value to be validated.
+It returnes a message if the value is invalid, otherwise `nil`.
+
+Below is how `lib/sukima/constraints.rb` implements the built-in constraint `:type`:
+
+[source,ruby]
+----
+class Sukima::Constraints
+  def self.type(type, value)
+    "should be #{type}" unless value.nil? || value.is_a?(type)
+  end
+end
+----
+
+== Reusing Constraints
+
+`#field` and `#items` can take an `Sukima` object as an argument:
+
+[source,ruby]
+----
+shared = Sukima.new type: Integer, in: 1..10
+
+sukima = Sukima.new type: Hash do
+  field :score, shared
+  field :scores, type: Array do
+    items shared
+  end
+end
+sukima.validate({score: 0, scores: [11]}).messages 
+# => ["score should be in 1..10", "scores.0 should be in 1..10"]
+----
+
+Reusing blocks is also possible:
+
+[source,ruby]
+----
+shared = proc do
+  field :name, type: String
+  field :age, type: Integer
+end
+
+sukima = Sukima.new type: Hash do
+  field :email, type: String
+  instance_eval(&shared)
+end
+
+sukima.validate({ name: 1, age: '20', email: 1 }).messages
+# => ["email should be String", "name should be String", "age should be Integer"]
+----
+
+== Conditional Validation
+
+`#field` and `#items` yields the value to the block so that you can define complex rules based on the value, this is useful for cases like polymorphic associations:
+
+[source,ruby]
+----
+sukima = Sukima.new type: Array do
+  items type: Hash do |hash|
+    field :type, type: String, in: %w[website user]
+
+    case hash[:type]
+    when 'website'
+      field :url, required: true
+    when 'user'
+      field :email, required: true
+    end
+  end
+end
+
+sukima.validate(
+  [
+    { type: 'website' },
+    { type: 'user' }
+  ]
+).messages
+# => ["0.url is required", "1.email is required"]
+----
