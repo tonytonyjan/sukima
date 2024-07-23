@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name        = 'sukima'
-  spec.version     = '0.0.2'
+  spec.version     = '0.0.3'
   spec.summary     = 'Lightweight data schema validation library for Ruby.'
   spec.description = 'Sukima is a lightweight data schema validation library for Ruby ' \
                      'written in only ~100 lines of code. ' \
