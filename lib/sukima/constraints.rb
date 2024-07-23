@@ -4,7 +4,7 @@ class Sukima
   module Constraints
     class << self
       def type(type, value)
-        "should be #{type}" unless value.nil? || value.is_a?(type)
+        "should be #{type}" unless value.is_a?(type)
       end
 
       def in(range, value)

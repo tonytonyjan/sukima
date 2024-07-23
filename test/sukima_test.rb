@@ -15,6 +15,11 @@ class SukimaTest < Minitest::Test
     assert result.valid?
   end
 
+  def test_nil_is_accepted_by_default
+    result = Sukima.new(type: String).validate(nil)
+    assert result.valid?
+  end
+
   def test_hash
     sukima = Sukima.new(type: Hash) do
       field :name, type: String, required: true

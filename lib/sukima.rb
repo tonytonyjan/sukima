@@ -14,6 +14,8 @@ class Sukima
 
   def validate(value)
     error_field = ErrorField.new
+    return error_field if !@constraints[:nonnil] && value.nil?
+
     @constraints.each do |key, args|
       next if key == :required
 
