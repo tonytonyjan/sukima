@@ -58,7 +58,7 @@ Below is how `lib/sukima/constraints.rb` implements the built-in constraint `:ty
 ----
 class Sukima::Constraints
   def self.type(type, value)
-    "should be #{type}" unless value.nil? || value.is_a?(type)
+    "should be #{type}" unless value.is_a?(type)
   end
 end
 ----
